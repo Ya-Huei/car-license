@@ -35,7 +35,7 @@ def findResult(rs, payload):
 	for i in rows:
 		if i.find_all('td'):
 			tds = i.find_all('td');
-			if len(tds) == 6:
+			if len(tds) > 0:
 				result.append({
 				"日期":tds[0].text,
 				"時間":tds[1].text,
