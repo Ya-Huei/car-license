@@ -39,9 +39,9 @@ def findResult(rs, payload):
 				result.append({
 				"日期":tds[0].text,
 				"時間":tds[1].text,
-				"停車單號":tds[2].text,
-				"應繳金額":tds[3].text.strip(' \t\n\r'),
-				"備註":tds[4].text,
+				"停車單號":tds[3].text,
+				"應繳金額":tds[4].text.strip(' \t\n\r'),
+				"繳費期限":tds[5].text.strip(' \t\n\r'),
 				})
 				result_str = '\n'.join(str(i) for i in result)
 	return (payload['CarID'] + ": \n" + result_str)
