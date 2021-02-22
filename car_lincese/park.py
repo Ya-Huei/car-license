@@ -3,7 +3,6 @@
 # -*- coding: UTF-8 -*-
 from bs4 import BeautifulSoup
 import requests
-import shutil
 from IPython.display import Image
 from PIL import Image
 import pytesseract
@@ -12,6 +11,8 @@ import numpy as np
 import time
 import warnings
 from urllib3.exceptions import InsecureRequestWarning
+import json
+from binascii import a2b_base64
 
 headers = {
 	'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/75.0.3770.100 Safari/537.36'
@@ -34,7 +35,7 @@ def findResult(rs, payload):
 	result_str = ""
 	for i in rows:
 		if i.find_all('td'):
-			tds = i.find_all('td');
+			tds = i.find_all('td')
 			if len(tds) > 0:
 				result.append({
 				"日期":tds[0].text,
@@ -48,24 +49,34 @@ def findResult(rs, payload):
     
 def getValidateCode(rs):
 	warnings.simplefilter('ignore',InsecureRequestWarning)
-	r = rs.get('https://parkingfee.pma.gov.taipei/Home/GetValidateCode?time=' + str(int(time.time())), verify = False, stream = True, headers = headers)
+	r = rs.post('https://parkingfee.pma.gov.taipei/Home/ChangeImageSource', verify = False, stream = True, headers = headers)
+	j = json.loads(r.text)
+	img_data = j["codeString"][22:]
+	binary_data = a2b_base64(img_data)
+
 	f = open('code.png', 'wb')
-	shutil.copyfileobj(r.raw, f)
+	f.write(binary_data)
 	f.close()
 
 def checkValidateCode():
 	img = Image.open('code.png').convert('L')
 	ret,img = cv2.threshold(np.array(img), 125, 255, cv2.THRESH_BINARY)
 	img = Image.fromarray(img.astype(np.uint8))
+	pytesseract.pytesseract.tesseract_cmd = 'C:/Program Files/Tesseract-OCR/tesseract.exe'
 	code = pytesseract.image_to_string(img)
-	return code
+
+	return code.strip()
 
 if __name__ == '__main__':
+	rs = requests.session()
+	warnings.simplefilter('ignore',InsecureRequestWarning)
+	r = rs.get('https://parkingfee.pma.gov.taipei/', verify = False, headers = headers)
+	
 	f = open('card_random.txt', 'r')
 	lines = f.readlines()
 	f.close()
 
-	fw = open('cardQuery_result.txt', 'w')
+	fw = open('card_query_result.txt', 'w')
 
 	for i in range(len(lines)):
 		# 忽略空白
@@ -83,6 +94,7 @@ if __name__ == '__main__':
 		}
 
 		result = findResult(rs, payload)
+		print("next...")
 		fw.write(result + "\n")
 
 	fw.close()
